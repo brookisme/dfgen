@@ -86,6 +86,7 @@ class DFGen():
         if reduce_to_others:
             self.dataframe[self.label_column]=self.dataframe[self.label_column].apply(
                 lambda x: self._reduce_to_others(x,label_index_or_tag))
+        self.size=self.dataframe.shape[0]
 
 
     def save_df(self,path,sep=None):
