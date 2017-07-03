@@ -1,13 +1,16 @@
 import os
+import yaml
 from skimage import io
 from sklearn.utils import shuffle
 import pandas as pd
 import numpy as np
 
+
 CSV_SEP=' '
-CONFIG_FILE_NAME='dfg_config.yaml'
+USER_CONFIG='./dfg_config.yaml'
 PATH_COLUMN='dfg_paths'
 ERROR_REQUIRED_COLUMNS='ERROR[DFGen]: both image and label column are requrired.'
+
 
 class DFGen():
     """ CREATES GENERATOR FROM DATAFRAME
@@ -91,8 +94,10 @@ class DFGen():
             if config file exsits: self._defaults=<dict-from-config>
             else: self._defaults={}
         """
-        # TODO: CHECK AND LOAD CONFIG
-        self._defaults={}
+        if os.path.isfile(USER_CONFIG):
+            self._defaults=yaml.safe_load(open(USER_CONFIG))
+        else:
+            self._defaults={}
 
 
     def _default(self,key):
