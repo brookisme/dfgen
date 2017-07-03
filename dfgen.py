@@ -21,6 +21,7 @@ class DFGen():
         Methods:
             .require_label: ensure a min percentage of a particular label
             .save: save processed csv to csv or as train/test-split csvs
+            .__next__: generator method, batchwise return tuple of (images,labels)
 
         Args:
             * image_column (column with image path or name) is required
@@ -53,7 +54,6 @@ class DFGen():
             csv_sep=None):
         self._init_properties()
         self._load_defaults()
-        self.batch_index=0
         self.tags=tags or self._default('tags_column')
         self.batch_size=batch_size or self._default('batch_size')
         self.lambda_func=lambda_func
@@ -61,7 +61,7 @@ class DFGen():
         self._set_columns(image_column,label_column,tags_to_labels_column)
         self._init_labels()
         self._set_image_dir_and_ext(image_dir,image_ext)
-        self._set_paths_and_labels()
+        self._reset_generator()
 
 
     def require_label(self,label_index_or_tag,pct,exact=False,reduce_to_others=False):
@@ -113,7 +113,7 @@ class DFGen():
                 if isinstance(reduce_to_others,str): others_name=reduce_to_others
                 else: others_name=OTHERS_NAME
                 self.tags=[self.tags[label_index],others_name]
-        self.size=self.dataframe.shape[0]
+        self._reset_generator()
 
 
     def save(self,path,split_path=None,split=0.2,sep=None):
@@ -140,14 +140,13 @@ class DFGen():
 
 
     def __next__(self):
-        """
-            batchwise return tuple of (images,labels)
+        """ batchwise return tuple of (images,labels)
         """        
         start=self.batch_index*self.batch_size
         end=start+self.batch_size
         if (end>=self.size):
-            self.labels, self.paths = shuffle(self.labels,self.paths)
             self.batch_index=0
+            self.labels, self.paths = shuffle(self.labels,self.paths)
         batch_labels=self.labels[start:end]
         batch_paths=self.paths[start:end]
         batch_imgs=[self._img_data(img) for img in batch_paths]
@@ -300,12 +299,19 @@ class DFGen():
         return [int(label_value==1),int(remainder>0)]
 
 
-    def _set_paths_and_labels(self):
+    def _reset_generator(self):
+        """ reset generator
+            * reset batch index
+            * shuffle dataframe
+            * add PATH_COLUMN if it doesnt exist
+            * set labels and paths
         """
-            - create PATH_COLUMN from image_column
-            - set shuffled label/path pairs
-        """
-        self.dataframe[PATH_COLUMN]=self.dataframe[self.image_column].apply(self._image_path_from_name)
+        self.batch_index=0
+        self.dataframe=self.dataframe.sample(frac=1)
+        self.size=self.dataframe.shape[0]
+        if PATH_COLUMN not in self.dataframe.columns:
+            self.dataframe[PATH_COLUMN]=self.dataframe[self.image_column].apply(
+                self._image_path_from_name)
         labels=self.dataframe[self.label_column].values.tolist()
         paths=self.dataframe[PATH_COLUMN].values.tolist()
         self.labels, self.paths = shuffle(labels,paths)

@@ -10,6 +10,7 @@
         Methods:
             .require_label: ensure a min percentage of a particular label
             .save: save processed csv to csv or as train/test-split csvs
+            .__next__: generator method, batchwise return tuple of (images,labels)
 
         Args:
             * image_column (column with image path or name) is required
