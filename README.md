@@ -84,9 +84,9 @@ Optional Features:
 
 
 ##### EXAMPLE CONFIG (in project root dir)
-<a name='#yaml'></a>
+<a name='yaml'></a>
 
-**[dfg_config.yaml](https://github.com/brookisme/dfgen/blob/master/example.dfg_config.yaml)***
+[dfg_config.yaml](https://github.com/brookisme/dfgen/blob/master/example.dfg_config.yaml)
 
 ```
 # COLUMN NAMES
