@@ -10,7 +10,7 @@ CSV_SEP=' '
 USER_CONFIG='./dfg_config.yaml'
 PATH_COLUMN='dfg_paths'
 ERROR_REQUIRED_COLUMNS='ERROR[DFGen]: both image and label column are requrired.'
-
+ERROR_TAGS_NOT_SET='ERROR[DFGEN]: require_label by tag requires tags be set'
 
 class DFGen():
     """ CREATES GENERATOR FROM DATAFRAME
@@ -42,27 +42,60 @@ class DFGen():
         self.batch_index=0
 
 
+    def require_label(self,label_index_or_tag,pct,exact=False,reduce_to_others=False):
+        """
+            Warning: Ordering matters
+
+                .require_label(1,40)
+                .require_label(2,20)
+            
+            does not equal:
+
+                .require_label(2,20)
+                .require_label(1,40)
+
+            Args:
+                * label_index_or_tag: <int|tag>
+                    - <int>(label_index): index of the label of interest
+                    - <str>(tag): if "tags": the name of the tag of interest
+                * pct: <int:0-100> percentage required for label
+                * exact:
+                    if False and there is the label already has >= pct of dataset
+                    return full-dataset
+                    else: remove data so that label is pct of dataset
+                * reduce to others.  
+                    return labels as 2 vectors [with label, and others]
+        """
+        if isinstance(label_index_or_tag,str):
+            if self.tags:
+                label_index_or_tag=self._tag_index(label_index_or_tag)
+            else:
+                raise ValueError(ERROR_TAGS_NOT_SET)
+        has_label_test=self.dataframe[self.label_column].apply(
+            lambda v: v[label_index_or_tag]==1)
+        label_df=self.dataframe[has_label_test]
+        label_size=label_df.shape[0]
+        full_pct=label_size/self.size
+        if (full_pct<pct) or exact:
+            others_df=self.dataframe[~has_label_test]
+            others_size=label_size*((100/pct)-1)
+            others_df=others_df.sample(others_size)
+            self.dataframe=pd.concat(
+                [label_df,others_df],
+                ignore_index=True).sample(frac=1)
+        if reduce_to_others:
+            self.dataframe[self.label_column]=self.dataframe[self.label_column].apply(
+                lambda x: self._reduce_to_others(x,label_index_or_tag))
+
+
     def save_df(self,path):
         """
             save processed-dataframe
+            (ie: tags->labels and/or require_label)
             once saved can pass without 
-            tags_to_labels_column
+            tags_to_labels_column|require_label
         """
         self.dataframe.to_csv(path,sep=self.csv_sep)
-
-
-    def restrict(self,pct_list):
-        """
-            Args:
-                pct_list: 
-                    list corresponding to labels vector
-                    on what percentage of each column to keep.
-                    - int (% to keep)
-                    - '*' keep any percentage
-                    - '!' remove
-            ??? what about 50% blowdown 50% not blowdown
-        """
-        pass
 
 
     def __next__(self):
@@ -178,6 +211,13 @@ class DFGen():
                 self._tags_to_vec)
 
 
+    def _tag_index(self,tag):
+        """
+            return index for tag
+        """
+        return self.tags.index(tag)
+
+
     def _tags_to_vec(self,tags):
         """ 
             - convert tag-list-string to a binary-valued label vector
@@ -188,6 +228,17 @@ class DFGen():
         """
         tags=tags.split(' ')
         return [int(label in tags) for label in self.tags]
+
+
+
+    def _reduce_to_others(self,vec,index):
+        """
+            take vector and return the value at index i
+            and a 1 or 0 if there are other nonzero values
+        """
+        label_value=vec.pop(index)
+        remainder=sum(vec)
+        return [int(label_value==1),int(remainder>0)]
 
 
     def _set_paths_and_labels(self):
