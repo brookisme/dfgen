@@ -10,13 +10,33 @@ CSV_SEP=' '
 USER_CONFIG='./dfg_config.yaml'
 PATH_COLUMN='dfg_paths'
 OTHERS_NAME='others'
-ERROR_REQUIRED_COLUMNS='ERROR[DFGen]: both image and label column are requrired.'
+ERROR_REQUIRED_COLUMNS='ERROR[DFGen]: image and label column are requrired.'
 ERROR_TAGS_NOT_SET='ERROR[DFGEN]: require_label by tag requires tags be set'
 
 class DFGen():
     """ CREATES GENERATOR FROM DATAFRAME
-        * load df directly from a df or from a csv
-        * ...
+        
+        create generator from existing dataframe or from a csv
+        
+        Methods:
+            .require_label: ensure a min percentage of a particular label
+            .save: save processed csv to csv or as train/test-split csvs
+
+        Args:
+            * image_column (column with image path or name) is required
+            * label_column column with label "vectors" is required 
+                - if the label_column already exists the dataframe will contain the labels
+                - if the label_column does not exsit and both tags and tags_to_labels_column
+                  are specified the tags will be converted to binary valued vectors
+            * tags: optional list of tags in corresponding to places in the label vectors
+            * tags_to_labels_column: name of a column that contain a space seperated 
+                string of tags. these strings will be converted to the binary label vectors
+            * image_dir: root path for image_paths given in "image_column"
+            * image_ext:
+                - append to image_column values when loading images
+                - if using dfg_config file image_ext can determine image_dir
+            * lambda_func: function that acts on image data before returned to user
+            * batch_size: batch_size
     """
     def __init__(
             self,
@@ -33,14 +53,15 @@ class DFGen():
             csv_sep=None):
         self._init_properties()
         self._load_defaults()
-        self._set_dataframe(csv_file,dataframe,csv_sep)
-        self._set_columns(image_column,label_column)
-        self._set_tags(tags,tags_to_labels_column)
-        self._set_image_dir_and_ext(image_dir,image_ext)
-        self._set_paths_and_labels()
+        self.batch_index=0
+        self.tags=tags or self._default('tags_column')
         self.batch_size=batch_size or self._default('batch_size')
         self.lambda_func=lambda_func
-        self.batch_index=0
+        self._set_dataframe(csv_file,dataframe,csv_sep)
+        self._set_columns(image_column,label_column,tags_to_labels_column)
+        self._init_labels()
+        self._set_image_dir_and_ext(image_dir,image_ext)
+        self._set_paths_and_labels()
 
 
     def require_label(self,label_index_or_tag,pct,exact=False,reduce_to_others=False):
@@ -95,14 +116,27 @@ class DFGen():
         self.size=self.dataframe.shape[0]
 
 
-    def save_df(self,path,sep=None):
+    def save(self,path,split_path=None,split=0.2,sep=None):
+        """ save dataframe to csv(s)
+
+            usually save after processing (ie: tags->labels and/or require_label),
+            so you wont need to process again.
+            
+            if split_path and split: 
+                - split dataframe into 2 csvs (path and save path)
+                - if split is int: split = number of lines in split_csv
+                  else: split = % of full dataframe
         """
-            save processed-dataframe
-            (ie: tags->labels and/or require_label)
-            once saved can pass without 
-            tags_to_labels_column|require_label
-        """
-        self.dataframe.to_csv(path,sep=sep or self.csv_sep)
+        if split_path and split: 
+            if isinstance(split,int): split_size=split
+            else: split_size=int(self.size*split)
+            self.dataframe=self.dataframe.sample(frac=1)
+            split_df=self.dataframe[:split_size]
+            df=self.dataframe[split_size:]
+            self._save_df(split_df,split_path,sep)
+            self._save_df(df,path,sep)
+        else:
+            self._save_df(self.dataframe,path,sep)
 
 
     def __next__(self):
@@ -144,6 +178,10 @@ class DFGen():
         """ safe get default
         """
         return self._defaults.get(key,None)
+
+
+    def _save_df(self,df,path,sep):
+        df.to_csv(path,index=False,sep=sep or self.csv_sep)
 
 
     def _img_data(self,path):
@@ -195,27 +233,41 @@ class DFGen():
 
 
 
-    def _set_columns(self,image_column,label_column):
+    def _set_columns(self,image_column,label_column,tags_column):
         """ set image and label column
         """
         self.image_column=image_column or self._default('image_column')
         self.label_column=label_column or self._default('label_column')
+        self.tags_column=tags_column or self._default('tags_column')
         if not (self.image_column and self.label_column):
             raise ValueError(ERROR_REQUIRED_COLUMNS)
 
 
 
-    def _set_tags(self,tags,tags_column):
+    def _init_labels(self):
         """
             if tags and tags column:
-                * set tag properties
-                * if tags_column: create label column from tags
+                * if tags_column and label column does not exist create label column
+                * else: ensure labels are lists
         """
-        self.tags=tags
-        self.tags_column=tags_column
-        if tags_column:
+        if self.tags_column and (self.label_column not in self.dataframe.columns):
             self.dataframe[self.label_column]=self.dataframe[self.tags_column].apply(
                 self._tags_to_vec)
+        else:
+            self.dataframe[self.label_column]=self.dataframe[self.label_column].apply(
+                self._to_list)
+
+
+    def _to_list(self,str_list):
+        """ Convert a list in string form to a list
+            We must type check since:
+                - if dataframe loaded from CSV vec will be a string
+                - if dataframe created directly vec will be list
+        """
+        if type(str_list) is str:
+            return list(eval(str_list))
+        else:
+            return str_list
 
 
     def _tag_index(self,tag):
