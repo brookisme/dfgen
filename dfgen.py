@@ -35,8 +35,8 @@ class DFGen():
         self._set_dataframe(csv_file,dataframe,csv_sep)
         self._set_columns(image_column,label_column)
         self._set_tags(tags,tags_to_labels_column)
-        self._set_paths_and_labels()
         self._set_image_dir_and_ext(image_dir,image_ext)
+        self._set_paths_and_labels()
         self.batch_size=batch_size or self._default('batch_size')
         self.lambda_func=lambda_func
         self.batch_index=0
@@ -78,7 +78,7 @@ class DFGen():
         full_pct=label_size/self.size
         if (full_pct<pct) or exact:
             others_df=self.dataframe[~has_label_test]
-            others_size=label_size*((100/pct)-1)
+            others_size=int(label_size*((100/pct)-1))
             others_df=others_df.sample(others_size)
             self.dataframe=pd.concat(
                 [label_df,others_df],
@@ -88,14 +88,14 @@ class DFGen():
                 lambda x: self._reduce_to_others(x,label_index_or_tag))
 
 
-    def save_df(self,path):
+    def save_df(self,path,sep=None):
         """
             save processed-dataframe
             (ie: tags->labels and/or require_label)
             once saved can pass without 
             tags_to_labels_column|require_label
         """
-        self.dataframe.to_csv(path,sep=self.csv_sep)
+        self.dataframe.to_csv(path,sep=sep or self.csv_sep)
 
 
     def __next__(self):
@@ -118,7 +118,7 @@ class DFGen():
     # INTERNAL METHODS
     #
     def _init_properties(self):
-        self._image_dir=None
+        self.image_dir=None
         self._lambda_func=None
 
 
@@ -182,7 +182,7 @@ class DFGen():
         """
         self.csv_sep=csv_sep or self._default('csv_sep') or CSV_SEP
         if file_path: 
-            df=pd.read_csv(self.file_path,sep=self.csv_sep)
+            df=pd.read_csv(file_path,sep=self.csv_sep)
         self.size=df.shape[0]
         self.dataframe=df
 
@@ -198,15 +198,15 @@ class DFGen():
 
 
 
-    def _set_tags(self,tags,tag_column):
+    def _set_tags(self,tags,tags_column):
         """
             if tags and tags column:
                 * set tag properties
                 * if tags_column: create label column from tags
         """
         self.tags=tags
-        if tag_column:
-            self.tag_column=tag_column
+        self.tags_column=tags_column
+        if tags_column:
             self.dataframe[self.label_column]=self.dataframe[self.tags_column].apply(
                 self._tags_to_vec)
 
