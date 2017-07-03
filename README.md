@@ -7,7 +7,7 @@ Optional Features:
 
 1. convert "tag" list to binary valued label vector for predictions
 2. save to train/test split files
-3. easy configuration with [yaml](yaml) file
+3. easy configuration with [yaml](#yaml) file
 
 ```
     """ CREATES GENERATOR FROM DATAFRAME
@@ -86,7 +86,7 @@ Optional Features:
 ##### EXAMPLE CONFIG (in project root dir)
 <a name='#yaml'></a>
 
-**dfg_config.yaml***
+**[dfg_config.yaml](https://github.com/brookisme/dfgen/blob/master/example.dfg_config.yaml)***
 
 ```
 # COLUMN NAMES
