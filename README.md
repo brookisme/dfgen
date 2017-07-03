@@ -2,6 +2,13 @@
 
 **Keras Image Generator from Dataframes**
 
+Creates generator from csv or dataframe.
+Optional Features:
+
+1. convert "tag" list to binary valued label vector for predictions
+2. save to train/test split files
+3. easy configuration with [yaml](yaml) file
+
 ```
     """ CREATES GENERATOR FROM DATAFRAME
         
@@ -70,4 +77,49 @@
                   else: split = % of full dataframe
         """
         ...
+```
+
+
+---
+
+
+##### EXAMPLE CONFIG (in project root dir)
+<a name='#yaml'></a>
+
+**dfg_config.yaml***
+
+```
+# COLUMN NAMES
+image_column: image_name
+label_column: labels
+tags_column: tags
+
+# IMAGE DIR BY EXT
+image_dirs: 
+  tif: images/tif
+  jpg: images/jpg
+
+# BACKUP IMAGE DIR
+image_dir: images/other
+
+# TAGS
+tags:
+    - primary
+    - clear
+    - agriculture
+    - road
+    - water
+    - partly_cloudy
+    - cultivation
+    - habitation
+    - haze
+    - cloudy
+    - bare_ground
+    - selective_logging
+    - artisinal_mine
+    - blooming
+    - slash_burn
+    - conventional_mine
+    - blow_down
+
 ```

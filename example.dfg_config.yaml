@@ -1,0 +1,34 @@
+# COLUMN NAMES
+image_column: image_name
+label_column: labels
+tags_column: tags
+
+# IMAGE DIR BY EXT
+image_dirs: 
+  tif: images/tif
+  jpg: images/jpg
+
+# BACKUP IMAGE DIR
+image_dir: images/other
+
+# TAGS
+tags:
+    - primary
+    - clear
+    - agriculture
+    - road
+    - water
+    - partly_cloudy
+    - cultivation
+    - habitation
+    - haze
+    - cloudy
+    - bare_ground
+    - selective_logging
+    - artisinal_mine
+    - blooming
+    - slash_burn
+    - conventional_mine
+    - blow_down
+
+

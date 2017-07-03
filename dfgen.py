@@ -54,7 +54,7 @@ class DFGen():
             csv_sep=None):
         self._init_properties()
         self._load_defaults()
-        self.tags=tags or self._default('tags_column')
+        self.tags=tags or self._default('tags')
         self.batch_size=batch_size or self._default('batch_size')
         self.lambda_func=lambda_func
         self._set_dataframe(csv_file,dataframe,csv_sep)
@@ -201,19 +201,17 @@ class DFGen():
         """Set image dir and image ext
             * image_ext = param or default
             * image_dir:
-                - if param: image_dir=param
-                - else: try default by ext and image_dirs
+                - if ext: try default by ext and image_dirs 
+                - else if param: image_dir=param
                 - or: default
         """
         self.image_ext=image_ext or self._default('image_ext')
-        if image_dir: self.image_dir=image_dir
-        else:
-            if self.image_ext:
-                image_dirs=self._default('image_dirs')
-                if image_dirs: 
-                    self.image_dir=image_dirs.get(self.image_ext)
-            if not self.image_dir:
-                self.image_dir=self._default('image_dir')
+        if self.image_ext:
+            image_dirs=self._default('image_dirs')
+            if image_dirs: 
+                self.image_dir=image_dirs.get(self.image_ext)
+        if not self.image_dir:
+            self.image_dir=self._default('image_dir')
 
 
     def _set_dataframe(self,file_path,df,csv_sep):
