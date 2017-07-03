@@ -9,6 +9,7 @@ import numpy as np
 CSV_SEP=' '
 USER_CONFIG='./dfg_config.yaml'
 PATH_COLUMN='dfg_paths'
+OTHERS_NAME='others'
 ERROR_REQUIRED_COLUMNS='ERROR[DFGen]: both image and label column are requrired.'
 ERROR_TAGS_NOT_SET='ERROR[DFGEN]: require_label by tag requires tags be set'
 
@@ -49,7 +50,7 @@ class DFGen():
                 .require_label(1,40)
                 .require_label(2,20)
             
-            does not equal:
+            may not equal:
 
                 .require_label(2,20)
                 .require_label(1,40)
@@ -64,15 +65,16 @@ class DFGen():
                     return full-dataset
                     else: remove data so that label is pct of dataset
                 * reduce to others.  
-                    return labels as 2 vectors [with label, and others]
+                    return labels as 2 vectors [label,others]
         """
         if isinstance(label_index_or_tag,str):
             if self.tags:
                 label_index_or_tag=self._tag_index(label_index_or_tag)
             else:
                 raise ValueError(ERROR_TAGS_NOT_SET)
+        label_index=label_index_or_tag
         has_label_test=self.dataframe[self.label_column].apply(
-            lambda v: v[label_index_or_tag]==1)
+            lambda v: v[label_index]==1)
         label_df=self.dataframe[has_label_test]
         label_size=label_df.shape[0]
         full_pct=label_size/self.size
@@ -85,7 +87,11 @@ class DFGen():
                 ignore_index=True).sample(frac=1)
         if reduce_to_others:
             self.dataframe[self.label_column]=self.dataframe[self.label_column].apply(
-                lambda x: self._reduce_to_others(x,label_index_or_tag))
+                lambda x: self._reduce_to_others(x,label_index))
+            if self.tags:
+                if isinstance(reduce_to_others,str): others_name=reduce_to_others
+                else: others_name=OTHERS_NAME
+                self.tags=[self.tags[label_index],others_name]
         self.size=self.dataframe.shape[0]
 
 
