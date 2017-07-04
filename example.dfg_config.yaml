@@ -3,6 +3,9 @@ image_column: image_name
 label_column: labels
 tags_column: tags
 
+# IMAGE EXT
+image_ext: tif
+
 # IMAGE DIR BY EXT
 image_dirs: 
   tif: images/tif

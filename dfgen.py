@@ -8,7 +8,7 @@ import numpy as np
 
 CSV_SEP=' '
 USER_CONFIG='./dfg_config.yaml'
-PATH_COLUMN='dfg_paths'
+PATH_COLUMN='paths'
 OTHERS_NAME='others'
 ERROR_REQUIRED_COLUMNS='ERROR[DFGen]: image and label column are requrired.'
 ERROR_TAGS_NOT_SET='ERROR[DFGEN]: require_label by tag requires tags be set'
@@ -65,7 +65,7 @@ class DFGen():
 
 
     def dataframe_with_tags(self,*tags):
-        """ return dataframe rows with tags
+        """ return dataframe rows containing certain tags
             Args: strings of tag names
                 ie. gen.dataframe_with_tags('blow_down','clear')
         """

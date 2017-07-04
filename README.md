@@ -13,11 +13,84 @@ Optional Features:
 
 ##### USAGE
 
-In the exampe below we have used the `dfg_config.yaml` file located [here](https://github.com/brookisme/dfgen/blob/master/example.dfg_config.yaml).
+In the examples below we have used the `dfg_config.yaml` file located [here](https://github.com/brookisme/dfgen/blob/master/example.dfg_config.yaml).
+
+A. [Init|Train|Test](#traintest)
+B. [DFGen.require_label](#require_label)
+C. [Generator and Lambda](#lambda)
+
+---
+
+<a name='traintest'></a>
+
+###### save (processed) data to train and test csvs
+
+```bash
+# bash
+$ head data.csv 
+image_name,tags
+train_0,haze primary
+train_1,agriculture clear primary water
+train_2,clear primary
+
+# python
+>>> from dfgen import DFGen
+>>> gen=DFGen(csv_file='data.csv',csv_sep=',')
+>>> gen.dataframe.sample(2)
+        image_name                 tags  \
+7901    train_7901  clear primary water   
+38214  train_38214        clear primary   
+
+                                                  labels  \
+7901   [1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+38214  [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+
+                        paths  
+7901    images/tif/train_7901.tif  
+38214  images/tif/train_38214.tif  
+
+# save as train/test split
+>>> gen.save(path='train.csv',split_path='test.csv')
+# or save the processed data (with labels, paths, require's)
+>>> gen.save(path='processed_data.csv')
+
+# side note: dfg_config file specifies tif but we could have loaded JPGs
+>>> gen=DFGen(csv_file='data.csv',csv_sep=',',image_ext='jpg')
+>>> gen.dataframe.paths.sample(2)
+21628    images/jpg/train_21628.jpg
+7955      images/jpg/train_7955.jpg
+Name: paths, dtype: object
+```
+
+###### load data to train and test generators
+
+```bash
+# bash (note we have the label and path columns)
+$ head ttrain.csv 
+image_name,tags,labels,paths
+train_12485,agriculture clear primary,"[1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]",images/tif/train_12485.tif
+train_3535,clear cultivation primary,"[1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]",images/tif/train_3535.tif
+train_4857,agriculture cultivation habitation partly_cloudy primary road,"[1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]",images/tif/train_4857.tif
+
+# python
+>>> train_gen=DFGen(csv_file='train.csv',csv_sep=',')
+>>> test_gen=DFGen(csv_file='test.csv',csv_sep=',')
+>>> train_gen.size/gen.size
+0.8000197633340744
+>>> ttest_gen.size/gen.size
+0.19998023666592554
+```
+
+
+--- 
+
+<a name='require_label'></a>
+
+###### using require_label to reduce dataset
 
 ```bash
 >>> from dfgen import DFGen
->>> gen=DFGen(csv_file='train.csv',csv_sep=',',image_ext='tif')
+>>> gen=DFGen(csv_file='data.csv',csv_sep=',')
 >>> gen.size
 40479
 >>> gen.dataframe.head(2)
@@ -29,7 +102,7 @@ In the exampe below we have used the `dfg_config.yaml` file located [here](https
 16452  [1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, ...   
 20043  [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
 
-                        dfg_paths  
+                        paths  
 16452  images/tif/train_16452.tif  
 20043  images/tif/train_20043.tif  
 
@@ -50,7 +123,7 @@ In the exampe below we have used the `dfg_config.yaml` file located [here](https
 55   [1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, ...   
 101  [1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, ...   
 
-                      dfg_paths  
+                      paths  
 55   images/tif/train_23025.tif  
 101  images/tif/train_20618.tif  
 
@@ -67,7 +140,7 @@ In the exampe below we have used the `dfg_config.yaml` file located [here](https
 12   train_38607  agriculture blow_down partly_cloudy primary  [1, 1]   
 24   train_31495            blow_down clear primary blow_down  [1, 1]   
 
-                      dfg_paths  
+                      paths  
 12   images/tif/train_38607.tif  
 109  images/tif/train_10679.tif  
 
@@ -76,8 +149,8 @@ In the exampe below we have used the `dfg_config.yaml` file located [here](https
 # COMBINING REQUIRE LABELs
 #
 >>> from dfgen import DFGen
->>> gen=DFGen(csv_file='train.csv',csv_sep=',',image_ext='tif')
->>> >>> gen.size
+>>> gen=DFGen(csv_file='data.csv',csv_sep=',',image_ext='tif')
+>>> gen.size
 183
 
 # You can also fetch the rows with specific tags
@@ -92,7 +165,7 @@ In the exampe below we have used the `dfg_config.yaml` file located [here](https
 25950  [1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, ...   
 9961   [1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, ...   
 
-                        dfg_paths  
+                        paths  
 25950  images/tif/train_25950.tif  
 9961    images/tif/train_9961.tif  
 
@@ -108,10 +181,42 @@ In the exampe below we have used the `dfg_config.yaml` file located [here](https
 #       We no longer have exactly 10% blow_down.
 >>> gen.dataframe_with_tags('blow_down').shape[0]/gen.size
 0.07650273224043716
+```
 
+---
 
+<a name='lambda'></a>
 
+###### generator and lambda
 
+```bash
+>>> from dfgen import DFGen
+>>> gen=DFGen(csv_file='data.csv',csv_sep=',')
+# returns first batch tuple (images,labels)
+>>> batch=next(gen)
+# so batch[0][0] is the np.array for the first image in the batch
+# in this case the image has 4 bands: [blue, green, red, nir]
+
+#
+# LETS PREPROCESS THE IMAGES
+#
+def ndvi(img):
+    r=img[:,:,2]
+    nir=img[:,:,3]
+    return (nir-r)/(nir+r)
+
+def ndvi_img(img):
+    ndvi_band=_ndvi(img)
+    img[:,:,3]=ndvi_band
+    return img
+
+>>> gen=DFGen(csv_file='data.csv',csv_sep=',',lambda_func=ndvi_img)
+# returns first batch tuple (ndvi-images,labels)
+>>> batch=next(gen)
+# now batch[0][0] is the np.array for the first image in the batch
+# which is the original image which has been passed through the 
+# 'ndvi_image' method.
+# the image has 4 bands: [blue, green, red, ndvi]
 ```
 
 
