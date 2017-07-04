@@ -15,9 +15,9 @@ Optional Features:
 
 In the examples below we have used the `dfg_config.yaml` file located [here](https://github.com/brookisme/dfgen/blob/master/example.dfg_config.yaml).
 
-A. [Init|Train|Test](#traintest)
-B. [DFGen.require_label](#require_label)
-C. [Generator and Lambda](#lambda)
+- [Init|Train|Test](#traintest)
+- [DFGen.require_label](#require_label)
+- [Generator and Lambda](#lambda)
 
 ---
 
