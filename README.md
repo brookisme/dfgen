@@ -222,10 +222,10 @@ def ndvi_img(img):
 >>> gen=DFGen(csv_file='data.csv',csv_sep=',',lambda_func=ndvi_img)
 # returns first batch tuple (ndvi-images,labels)
 >>> batch=next(gen)
-# now batch[0][0] is the np.array for the first image in the batch
-# which is the original image which has been passed through the 
-# 'ndvi_image' method.
-# the image has 4 bands: [blue, green, red, ndvi]
+# now batch[0][0] is the np.array for the first image in the 
+# preprocessed-batch. its the same image as above but it has been 
+# passed through the 'ndvi_image' method. 
+# The 4 bands are now: [blue, green, red, ndvi]
 ```
 
 
