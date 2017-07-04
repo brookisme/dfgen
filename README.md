@@ -9,6 +9,15 @@ Optional Features:
 2. save to train/test split files
 3. easy configuration with [yaml](#yaml) file
 
+##### INSTALL
+
+```bash
+cd ~/
+git clone https://github.com/brookisme/dfgen.git
+cd dfgen
+pip install -e .
+```
+
 ---
 
 ##### USAGE
