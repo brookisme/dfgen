@@ -9,6 +9,116 @@ Optional Features:
 2. save to train/test split files
 3. easy configuration with [yaml](#yaml) file
 
+---
+
+##### USAGE
+
+In the exampe below we have used the `dfg_config.yaml` file located [here](https://github.com/brookisme/dfgen/blob/master/example.dfg_config.yaml).
+
+```bash
+>>> from dfgen import DFGen
+>>> gen=DFGen(csv_file='train.csv',csv_sep=',',image_ext='tif')
+>>> gen.size
+40479
+>>> gen.dataframe.head(2)
+        image_name                                       tags  \
+16452  train_16452  agriculture clear habitation primary road   
+20043  train_20043                              clear primary   
+
+                                                  labels  \
+16452  [1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, ...   
+20043  [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+
+                        dfg_paths  
+16452  images/tif/train_16452.tif  
+20043  images/tif/train_20043.tif  
+
+#
+# REQUIRE_LABEL:
+#
+>>> gen.require_label('blow_down',70)
+>>> gen.size
+140
+>>> gen.tags
+['primary', 'clear', 'agriculture', 'road', 'water', 'partly_cloudy', 'cultivation', 'habitation', 'haze', 'cloudy', 'bare_ground', 'selective_logging', 'artisinal_mine', 'blooming', 'slash_burn', 'conventional_mine', 'blow_down']
+>>> gen.dataframe.sample(2)
+      image_name                                             tags  \
+55   train_23025   blow_down clear cultivation habitation primary   
+101  train_20618                        clear cultivation primary   
+
+                                                labels  \
+55   [1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, ...   
+101  [1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+
+                      dfg_paths  
+55   images/tif/train_23025.tif  
+101  images/tif/train_20618.tif  
+
+#
+# REQUIRE_LABEL: reduce_to_others=True
+#
+>>> gen.require_label('blow_down',70,reduce_to_others=True)
+>>> gen.size
+140
+>>> gen.tags
+['blow_down', 'others']
+>>> gen.dataframe.sample(2)
+      image_name                                         tags  labels  \
+12   train_38607  agriculture blow_down partly_cloudy primary  [1, 1]   
+24   train_31495            blow_down clear primary blow_down  [1, 1]   
+
+                      dfg_paths  
+12   images/tif/train_38607.tif  
+109  images/tif/train_10679.tif  
+
+
+#
+# COMBINING REQUIRE LABELs
+#
+>>> from dfgen import DFGen
+>>> gen=DFGen(csv_file='train.csv',csv_sep=',',image_ext='tif')
+>>> >>> gen.size
+183
+
+# You can also fetch the rows with specific tags
+>>> gen.dataframe_with_tags('blow_down','cultivation').size
+32
+>>> gen.dataframe_with_tags('blow_down','cultivation').head(2)
+        image_name                                               tags  \
+25950  train_25950  agriculture blooming blow_down clear cultivati...   
+9961    train_9961    agriculture blow_down clear cultivation primary   
+
+                                                  labels  \
+25950  [1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, ...   
+9961   [1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+
+                        dfg_paths  
+25950  images/tif/train_25950.tif  
+9961    images/tif/train_9961.tif  
+
+# RequireLabel and check percentages
+>>> gen.require_label('blow_down',10)
+>>> gen.dataframe_with_tags('blow_down').shape[0]/gen.size
+0.1
+>>> gen.require_label('cultivation',60)
+>>> gen.dataframe_with_tags('cultivation').shape[0]/gen.size
+0.6010928961748634
+
+# NOTE: The second require label effect the first.  
+#       We no longer have exactly 10% blow_down.
+>>> gen.dataframe_with_tags('blow_down').shape[0]/gen.size
+0.07650273224043716
+
+
+
+
+```
+
+
+---
+
+##### COMMENT-DOCS
+
 ```
     """ CREATES GENERATOR FROM DATAFRAME
         
@@ -61,6 +171,14 @@ Optional Features:
                     else: remove data so that label is pct of dataset
                 * reduce to others.  
                     return labels as 2 vectors [label,others]
+        """
+        ...
+
+
+    def dataframe_with_tags(self,*tags):
+        """ return dataframe rows containing certain tags
+            Args: strings of tag names
+                ie. gen.dataframe_with_tags('blow_down','clear')
         """
         ...
 

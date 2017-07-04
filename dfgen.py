@@ -64,6 +64,16 @@ class DFGen():
         self._reset_generator()
 
 
+    def dataframe_with_tags(self,*tags):
+        """ return dataframe rows with tags
+            Args: strings of tag names
+                ie. gen.dataframe_with_tags('blow_down','clear')
+        """
+        tags_exist=self.dataframe[self.tags_column].apply(
+            lambda row_tags: self._has_tags(row_tags,tags))
+        return self.dataframe[tags_exist]
+
+
     def require_label(self,label_index_or_tag,pct,exact=False,reduce_to_others=False):
         """
             Warning: Ordering matters
@@ -285,6 +295,12 @@ class DFGen():
         tags=tags.split(' ')
         return [int(label in tags) for label in self.tags]
 
+
+    def _has_tags(self,row_tags,tags):
+        """ check if tags are in row_tags
+        """
+        row_tags=row_tags.split(' ')
+        return set(tags).issubset(row_tags)
 
 
     def _reduce_to_others(self,vec,index):
