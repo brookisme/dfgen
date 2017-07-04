@@ -83,7 +83,7 @@ Optional Features:
 ---
 
 
-##### EXAMPLE CONFIG (in project root dir)
+##### EXAMPLE CONFIG (in directory with .py or ipynb file)
 <a name='yaml'></a>
 
 [dfg_config.yaml](https://github.com/brookisme/dfgen/blob/master/example.dfg_config.yaml)
