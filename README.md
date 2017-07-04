@@ -162,7 +162,7 @@ train_4857,agriculture cultivation habitation partly_cloudy primary road,"[1, 0,
 >>> gen.size
 183
 
-# You can also fetch the rows with specific tags
+# You can fetch the rows with specific tags
 >>> gen.dataframe_with_tags('blow_down','cultivation').size
 32
 >>> gen.dataframe_with_tags('blow_down','cultivation').head(2)
@@ -186,7 +186,7 @@ train_4857,agriculture cultivation habitation partly_cloudy primary road,"[1, 0,
 >>> gen.dataframe_with_tags('cultivation').shape[0]/gen.size
 0.6010928961748634
 
-# NOTE: The second require label effect the first.  
+# NOTE: The second require label effects the first.  
 #       We no longer have exactly 10% blow_down.
 >>> gen.dataframe_with_tags('blow_down').shape[0]/gen.size
 0.07650273224043716
