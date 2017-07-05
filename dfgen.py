@@ -139,7 +139,6 @@ class DFGen():
             label_indices=list(map(self._tag_index,indices_or_tags))
         else: 
             label_indices=indices_or_tags
-        print('RC',label_indices)
         self.dataframe[self.label_column]=self.dataframe[self.label_column].apply(
             lambda label: self._reduce_label(label,label_indices,others))
         if self.tags:
@@ -147,6 +146,15 @@ class DFGen():
             if others:
                 if not isinstance(others,str): others='others'
                 self.tags.append(others)
+        self._reset_generator()
+
+
+    def limit(self,nb_rows):
+        """ limit number of rows in dataframe
+
+            Use to create dev training sets
+        """
+        self.dataframe=self.dataframe.sample(nb_rows)
         self._reset_generator()
 
 

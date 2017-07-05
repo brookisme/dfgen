@@ -64,6 +64,19 @@ train_2,clear primary
 # or save the processed data (with labels, paths, require's)
 >>> gen.save(path='processed_data.csv')
 
+# if you want small datasets for developement you can use limit
+>>> gen=DFGen(csv_file='train.csv',csv_sep=',')
+>>> gen.size
+40479
+>>> gen.limit(400)
+>>> gen.size
+400
+>>> gen.save(path='dev_train.csv',split_path='dev_test.csv')
+
+
+
+
+
 # side note: dfg_config file specifies tif but we could have loaded JPGs
 >>> gen=DFGen(csv_file='data.csv',csv_sep=',',image_ext='jpg')
 >>> gen.dataframe.paths.sample(2)
@@ -324,6 +337,32 @@ def ndvi_img(img):
                     else: remove data so that label is pct of dataset
                 * reduce to others.  
                     return labels as 2 vectors [label,others]
+        """
+        ...
+
+
+    def reduce_columns(self,*indices_or_tags,others=True):
+        """ Keep passed columns and optional "others"
+
+            Usage:
+                gen.reduce_to_others('blow_down','cultivation')
+
+            Args:
+                * str or int arguments: label indices or tag names
+                * others: 
+                    - if falsey: do not include "others column"
+                    - else:
+                        include "others"
+                        - if others arg is <str>: use others arg as column name
+                        - else: use "others" as column name
+        """
+        ...
+
+
+    def limit(self,nb_rows):
+        """ limit number of rows in dataframe
+
+            Use to create dev training sets
         """
         ...
 
