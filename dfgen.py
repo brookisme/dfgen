@@ -11,7 +11,7 @@ USER_CONFIG='./dfg_config.yaml'
 PATH_COLUMN='paths'
 OTHERS_NAME='others'
 ERROR_REQUIRED_COLUMNS='ERROR[DFGen]: image and label column are requrired.'
-ERROR_TAGS_NOT_SET='ERROR[DFGEN]: require_label by tag requires tags be set'
+ERROR_TAGS_NOT_SET='ERROR[DFGEN]: reduce by tag requires tags be set'
 
 class DFGen():
     """ CREATES GENERATOR FROM DATAFRAME
@@ -99,11 +99,9 @@ class DFGen():
                     return labels as 2 vectors [label,others]
         """
         if isinstance(label_index_or_tag,str):
-            if self.tags:
-                label_index_or_tag=self._tag_index(label_index_or_tag)
-            else:
-                raise ValueError(ERROR_TAGS_NOT_SET)
-        label_index=label_index_or_tag
+            label_index=self._tag_index(label_index_or_tag)
+        else: 
+            label_index=label_index_or_tag
         has_label_test=self.dataframe[self.label_column].apply(
             lambda v: v[label_index]==1)
         label_df=self.dataframe[has_label_test]
@@ -117,12 +115,38 @@ class DFGen():
                 [label_df,others_df],
                 ignore_index=True).sample(frac=1)
         if reduce_to_others:
-            self.dataframe[self.label_column]=self.dataframe[self.label_column].apply(
-                lambda x: self._reduce_to_others(x,label_index))
-            if self.tags:
-                if isinstance(reduce_to_others,str): others_name=reduce_to_others
-                else: others_name=OTHERS_NAME
-                self.tags=[self.tags[label_index],others_name]
+            self.reduce_columns(label_index,others=reduce_to_others)
+        else:
+            self._reset_generator()
+
+
+    def reduce_columns(self,*indices_or_tags,others='others'):
+        """ Keep passed columns and optional "others"
+
+            Usage:
+                gen.reduce_to_others('blow_down','cultivation')
+
+            Args:
+                * str or int arguments: label indices or tag names
+                * others: 
+                    - if falsey: do not include "others column"
+                    - else:
+                        include "others"
+                        - if others arg is <str>: use others arg as column name
+                        - else: use "others" as column name
+        """
+        if isinstance(indices_or_tags[0],str):
+            label_indices=list(map(self._tag_index,indices_or_tags))
+        else: 
+            label_indices=indices_or_tags
+        print('RC',label_indices)
+        self.dataframe[self.label_column]=self.dataframe[self.label_column].apply(
+            lambda label: self._reduce_label(label,label_indices,others))
+        if self.tags:
+            self.tags=list(map(lambda idx: self.tags[idx],label_indices))
+            if others:
+                if not isinstance(others,str): others='others'
+                self.tags.append(others)
         self._reset_generator()
 
 
@@ -281,7 +305,10 @@ class DFGen():
         """
             return index for tag
         """
-        return self.tags.index(tag)
+        if self.tags:
+            return self.tags.index(tag)
+        else:
+            raise ValueError(ERROR_TAGS_NOT_SET)
 
 
     def _tags_to_vec(self,tags):
@@ -303,14 +330,15 @@ class DFGen():
         return set(tags).issubset(row_tags)
 
 
-    def _reduce_to_others(self,vec,index):
+    def _reduce_label(self,label,indices,others):
         """
-            take vector and return the value at index i
+            take vector and return the values at indices
             and a 1 or 0 if there are other nonzero values
         """
-        label_value=vec.pop(index)
-        remainder=sum(vec)
-        return [int(label_value==1),int(remainder>0)]
+        label_values=list(map(lambda index: label.pop(index),indices))
+        remainder=sum(label)
+        if others: label_values.append(int(remainder>0))
+        return label_values
 
 
     def _reset_generator(self):
