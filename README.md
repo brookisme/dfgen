@@ -25,6 +25,7 @@ pip install -e .
 In the examples below we have used the `dfg_config.yaml` file located [here](https://github.com/brookisme/dfgen/blob/master/example.dfg_config.yaml).
 
 - [Init|Train|Test](#traintest)
+- [Reduce Columns](#reduce_columns)
 - [DFGen.require_label](#require_label)
 - [Generator and Lambda](#lambda)
 
@@ -91,6 +92,40 @@ train_4857,agriculture cultivation habitation partly_cloudy primary road,"[1, 0,
 ```
 
 
+---
+
+<a name='reduce_columns'></a>
+###### Reduce Columns
+
+```bash
+>>> gen=DFGen(csv_file='train.csv',csv_sep=',',image_ext='tif')
+>>> gen.size
+40479
+>>> gen.tags
+['primary', 'clear', 'agriculture', 'road', 'water', 'partly_cloudy', 'cultivation', 'habitation', 'haze', 'cloudy', 'bare_ground', 'selective_logging', 'artisinal_mine', 'blooming', 'slash_burn', 'conventional_mine', 'blow_down']
+>>> gen.dataframe_with_tags('blow_down','cultivation').size
+32
+>>> gen.reduce_columns('blow_down','cultivation')
+>>> gen.tags
+['blow_down', 'cultivation', 'others']
+>>> gen.dataframe.sample(2)
+        image_name                                  tags     labels  \
+6550    train_6550                         clear primary  [0, 0, 1]   
+30966  train_30966  agriculture clear primary road water  [0, 0, 1]   
+
+                            paths  
+6550    images/tif/train_6550.tif  
+30966  images/tif/train_30966.tif  
+>>> gen.reduce_columns('blow_down','cultivation',others=False)
+>>> gen.tags
+['blow_down', 'cultivation']
+>>> gen.dataframe.sample(2)
+        image_name                   tags  labels                       paths
+31901  train_31901  partly_cloudy primary  [0, 1]  images/tif/train_31901.tif
+14158  train_14158  partly_cloudy primary  [0, 1]  images/tif/train_14158.tif
+```
+
+
 --- 
 
 <a name='require_label'></a>
@@ -137,7 +172,10 @@ train_4857,agriculture cultivation habitation partly_cloudy primary road,"[1, 0,
 101  images/tif/train_20618.tif  
 
 #
-# REQUIRE_LABEL: reduce_to_others=True
+# REQUIRE_LABEL: reduce_to_others=True 
+#   - this is the same as:
+#       gen.require_label('blow_down',70)
+#       gen.reduce_columns('blow_down')
 #
 >>> gen.require_label('blow_down',70,reduce_to_others=True)
 >>> gen.size
@@ -191,6 +229,7 @@ train_4857,agriculture cultivation habitation partly_cloudy primary road,"[1, 0,
 >>> gen.dataframe_with_tags('blow_down').shape[0]/gen.size
 0.07650273224043716
 ```
+
 
 ---
 

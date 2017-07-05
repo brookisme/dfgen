@@ -120,7 +120,7 @@ class DFGen():
             self._reset_generator()
 
 
-    def reduce_columns(self,*indices_or_tags,others='others'):
+    def reduce_columns(self,*indices_or_tags,others=True):
         """ Keep passed columns and optional "others"
 
             Usage:
