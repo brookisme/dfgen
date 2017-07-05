@@ -71,8 +71,7 @@ train_2,clear primary
 >>> gen.limit(400)
 >>> gen.size
 400
->>> gen.save(path='dev_train.csv',split_path='dev_test.csv')
-
+>>> gen.save(path='dev_train.csv',split_path='dev_test.csv',split=100)
 
 
 
@@ -89,7 +88,7 @@ Name: paths, dtype: object
 
 ```bash
 # bash (note we have the label and path columns)
-$ head ttrain.csv 
+$ head train.csv 
 image_name,tags,labels,paths
 train_12485,agriculture clear primary,"[1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]",images/tif/train_12485.tif
 train_3535,clear cultivation primary,"[1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]",images/tif/train_3535.tif
@@ -100,7 +99,7 @@ train_4857,agriculture cultivation habitation partly_cloudy primary road,"[1, 0,
 >>> test_gen=DFGen(csv_file='test.csv',csv_sep=',')
 >>> train_gen.size/gen.size
 0.8000197633340744
->>> ttest_gen.size/gen.size
+>>> test_gen.size/gen.size
 0.19998023666592554
 ```
 
