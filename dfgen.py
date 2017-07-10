@@ -343,9 +343,10 @@ class DFGen():
             take vector and return the values at indices
             and a 1 or 0 if there are other nonzero values
         """
-        label_values=list(map(lambda index: label.pop(index),indices))
-        remainder=sum(label)
-        if others: label_values.append(int(remainder>0))
+        label_values=[label[index] for index in indices]
+        other_values=[
+            label[index] for index in range(len(label)) if index not in indices]
+        if others: label_values.append(int(sum(other_values)>0))
         return label_values
 
 
