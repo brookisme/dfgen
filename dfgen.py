@@ -57,11 +57,11 @@ class DFGen():
         self.tags=tags or self._default('tags')
         self.batch_size=batch_size or self._default('batch_size')
         self.lambda_func=lambda_func
-        self._set_dataframe(csv_file,dataframe,csv_sep)
         self._set_columns(image_column,label_column,tags_to_labels_column)
-        self._init_labels()
         self._set_image_dir_and_ext(image_dir,image_ext)
-        self._reset_generator()
+        self._set_dataframe(csv_file,dataframe,csv_sep)
+        self._init_labels()
+        self.reset()
 
 
     def dataframe_with_tags(self,*tags):
@@ -117,7 +117,7 @@ class DFGen():
         if reduce_to_others:
             self.reduce_columns(label_index,others=reduce_to_others)
         else:
-            self._reset_generator()
+            self.reset()
 
 
     def reduce_columns(self,*indices_or_tags,others=True):
@@ -146,7 +146,7 @@ class DFGen():
             if others:
                 if not isinstance(others,str): others='others'
                 self.tags.append(others)
-        self._reset_generator()
+        self.reset()
 
 
     def limit(self,nb_rows):
@@ -155,7 +155,20 @@ class DFGen():
             Use to create dev training sets
         """
         self.dataframe=self.dataframe.sample(nb_rows)
-        self._reset_generator()
+        self.reset()
+
+
+    def reset(self):
+        """ reset generator
+            * reset batch index to zero
+            * shuffle dataframe
+            * set size, labels and paths
+        """
+        self.batch_index=0
+        self.dataframe=self.dataframe.sample(frac=1)
+        self.size=self.dataframe.shape[0]
+        self.labels=self.dataframe[self.label_column].values.tolist()
+        self.paths=self.dataframe[PATH_COLUMN].values.tolist()
 
 
     def save(self,path,split_path=None,split=0.2,sep=None):
@@ -186,9 +199,7 @@ class DFGen():
         """        
         start=self.batch_index*self.batch_size
         end=start+self.batch_size
-        if (end>=self.size):
-            self.batch_index=0
-            self.labels, self.paths = shuffle(self.labels,self.paths)
+        if (end>=self.size): self.reset()
         batch_labels=self.labels[start:end]
         batch_paths=self.paths[start:end]
         batch_imgs=[self._img_data(img) for img in batch_paths]
@@ -258,18 +269,15 @@ class DFGen():
 
     def _set_dataframe(self,file_path,df,csv_sep):
         """Set Data
-            sets three instance properties:
-                self.labels
-                self.paths
-                self.dataframe
-            the paths and labels are pairwised shuffled
+            set self.dataframe from path or df
+            * add PATH_COLUMN if it doesnt exist
         """
         self.csv_sep=csv_sep or self._default('csv_sep') or CSV_SEP
         if file_path: 
             df=pd.read_csv(file_path,sep=self.csv_sep)
-        self.size=df.shape[0]
+        if PATH_COLUMN not in df.columns:
+            df[PATH_COLUMN]=df[self.image_column].apply(self._image_path_from_name)
         self.dataframe=df
-
 
 
     def _set_columns(self,image_column,label_column,tags_column):
@@ -348,24 +356,6 @@ class DFGen():
             label[index] for index in range(len(label)) if index not in indices]
         if others: label_values.append(int(sum(other_values)>0))
         return label_values
-
-
-    def _reset_generator(self):
-        """ reset generator
-            * reset batch index
-            * shuffle dataframe
-            * add PATH_COLUMN if it doesnt exist
-            * set labels and paths
-        """
-        self.batch_index=0
-        self.dataframe=self.dataframe.sample(frac=1)
-        self.size=self.dataframe.shape[0]
-        if PATH_COLUMN not in self.dataframe.columns:
-            self.dataframe[PATH_COLUMN]=self.dataframe[self.image_column].apply(
-                self._image_path_from_name)
-        labels=self.dataframe[self.label_column].values.tolist()
-        paths=self.dataframe[PATH_COLUMN].values.tolist()
-        self.labels, self.paths = shuffle(labels,paths)
 
 
     def _image_path_from_name(self,name):
