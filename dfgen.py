@@ -170,9 +170,11 @@ class DFGen():
         self.size=self.dataframe.shape[0]
         self.labels=self.dataframe[self.label_column].values.tolist()
         self.paths=self.dataframe[PATH_COLUMN].values.tolist()
+        if self.augment:
+            self.augments=self.dataframe[AUGMENT_COLUMN].values.tolist()
 
 
-    def augmented_dataframe(self,rotations=[1,2,3],flips=[1,0]):
+    def augmented_dataframe(self,rotations=[1,2,3],flips=[0,1]):
         if AUGMENT_COLUMN in self.dataframe.columns:
             return self.dataframe
         else:
@@ -222,13 +224,11 @@ class DFGen():
         batch_paths=self.paths[start:end]
         if self.augment:
             batch_augments=self.augments[start:end]
-            print(batch_augments[0],type(batch_augments[0]))
             batch_imgs=[
                 self._img_data(img,augment) for img,augment in zip(
                     batch_paths,batch_augments)]
         else:
             batch_imgs=[self._img_data(img) for img in batch_paths]
-        return batch_augments
         self.batch_index+=1
         return np.array(batch_imgs),np.array(batch_labels)
     
@@ -270,7 +270,7 @@ class DFGen():
                 path: <str> path to image
         """
         img=io.imread(path)
-        if False:
+        if self.augment:
             img=self._augment(img,augment)
         if self.lambda_func:
             return self.lambda_func(img)
@@ -287,7 +287,7 @@ class DFGen():
                     - augment[1]: truthy/falsey flip image
         """
         r,f=augment
-        img=np.rot90(r)
+        img=np.rot90(img,r)
         if f: img=np.fliplr(img)
         return img
 
@@ -322,8 +322,6 @@ class DFGen():
             df[PATH_COLUMN]=df[self.image_column].apply(self._image_path_from_name)
         self.dataframe=df
         self.augment=(AUGMENT_COLUMN in self.dataframe.columns)
-        if self.augment:
-            self.augments=self.dataframe[AUGMENT_COLUMN].values.tolist()
 
 
     def _set_columns(self,image_column,label_column,tags_column):
