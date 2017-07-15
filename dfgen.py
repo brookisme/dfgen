@@ -10,6 +10,7 @@ CSV_SEP=' '
 USER_CONFIG='./dfg_config.yaml'
 PATH_COLUMN='paths'
 OTHERS_NAME='others'
+AUGMENT_COLUMN='augment'
 ERROR_REQUIRED_COLUMNS='ERROR[DFGen]: image and label column are requrired.'
 ERROR_TAGS_NOT_SET='ERROR[DFGEN]: reduce by tag requires tags be set'
 
@@ -162,7 +163,7 @@ class DFGen():
         """ reset generator
             * reset batch index to zero
             * shuffle dataframe
-            * set size, labels and paths
+            * set size, labels, paths, augments
         """
         self.batch_index=0
         self.dataframe=self.dataframe.sample(frac=1)
@@ -171,7 +172,20 @@ class DFGen():
         self.paths=self.dataframe[PATH_COLUMN].values.tolist()
 
 
-    def save(self,path,split_path=None,split=0.2,sep=None):
+    def augmented_dataframe(self,rotations=[1,2,3],flips=[1,0]):
+        if AUGMENT_COLUMN in self.dataframe.columns:
+            return self.dataframe
+        else:
+            dfs=[]
+            for r in rotations:
+                for f in flips:
+                    df=self.dataframe.copy()
+                    df[AUGMENT_COLUMN]=f'[{r},{f}]'
+                    dfs.append(df)
+            return pd.concat(dfs)
+
+
+    def save(self,path,split_path=None,split=0.2,sep=None,augmented=False):
         """ save dataframe to csv(s)
 
             usually save after processing (ie: tags->labels and/or require_label),
@@ -182,16 +196,20 @@ class DFGen():
                 - if split is int: split = number of lines in split_csv
                   else: split = % of full dataframe
         """
+        if augmented:
+            df=self.augmented_dataframe()
+        else:
+            df=self.dataframe
         if split_path and split: 
             if isinstance(split,int): split_size=split
             else: split_size=int(self.size*split)
-            self.dataframe=self.dataframe.sample(frac=1)
-            split_df=self.dataframe[:split_size]
-            df=self.dataframe[split_size:]
+            df=df.sample(frac=1)
+            split_df=df[:split_size]
+            df=df[split_size:]
             self._save_df(split_df,split_path,sep)
             self._save_df(df,path,sep)
         else:
-            self._save_df(self.dataframe,path,sep)
+            self._save_df(df,path,sep)
 
 
     def __next__(self):
@@ -202,7 +220,15 @@ class DFGen():
         if (end>=self.size): self.reset()
         batch_labels=self.labels[start:end]
         batch_paths=self.paths[start:end]
-        batch_imgs=[self._img_data(img) for img in batch_paths]
+        if self.augment:
+            batch_augments=self.augments[start:end]
+            print(batch_augments[0],type(batch_augments[0]))
+            batch_imgs=[
+                self._img_data(img,augment) for img,augment in zip(
+                    batch_paths,batch_augments)]
+        else:
+            batch_imgs=[self._img_data(img) for img in batch_paths]
+        return batch_augments
         self.batch_index+=1
         return np.array(batch_imgs),np.array(batch_labels)
     
@@ -236,7 +262,7 @@ class DFGen():
         df.to_csv(path,index=False,sep=sep or self.csv_sep)
 
 
-    def _img_data(self,path):
+    def _img_data(self,path,augment=None):
         """Read Data 
             if self.lambda_func: apply lambda_func
 
@@ -244,10 +270,26 @@ class DFGen():
                 path: <str> path to image
         """
         img=io.imread(path)
+        if False:
+            img=self._augment(img,augment)
         if self.lambda_func:
             return self.lambda_func(img)
         else:
             return img
+
+
+    def _augment(self,img,augment):
+        """
+            Args:
+                img: np.array
+                augment: list or tuple
+                    - augment[0]: # of 90 deg rotations
+                    - augment[1]: truthy/falsey flip image
+        """
+        r,f=augment
+        img=np.rot90(r)
+        if f: img=np.fliplr(img)
+        return img
 
 
     def _set_image_dir_and_ext(self,image_dir,image_ext):
@@ -271,6 +313,7 @@ class DFGen():
         """Set Data
             set self.dataframe from path or df
             * add PATH_COLUMN if it doesnt exist
+            * set augments if column exists
         """
         self.csv_sep=csv_sep or self._default('csv_sep') or CSV_SEP
         if file_path: 
@@ -278,6 +321,9 @@ class DFGen():
         if PATH_COLUMN not in df.columns:
             df[PATH_COLUMN]=df[self.image_column].apply(self._image_path_from_name)
         self.dataframe=df
+        self.augment=(AUGMENT_COLUMN in self.dataframe.columns)
+        if self.augment:
+            self.augments=self.dataframe[AUGMENT_COLUMN].values.tolist()
 
 
     def _set_columns(self,image_column,label_column,tags_column):
@@ -288,7 +334,6 @@ class DFGen():
         self.tags_column=tags_column or self._default('tags_column')
         if not (self.image_column and self.label_column):
             raise ValueError(ERROR_REQUIRED_COLUMNS)
-
 
 
     def _init_labels(self):
@@ -303,6 +348,9 @@ class DFGen():
         else:
             self.dataframe[self.label_column]=self.dataframe[self.label_column].apply(
                 self._to_list)
+        if self.augment:
+            self.dataframe[AUGMENT_COLUMN]=self.dataframe[AUGMENT_COLUMN].apply(
+                self._to_list)        
 
 
     def _to_list(self,str_list):
