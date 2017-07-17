@@ -121,6 +121,28 @@ class DFGen():
             self.reset()
 
 
+    def require_values(self,pct,nb_columns=None,exact=False):
+        """ 
+            * require a certain percentage of the data not have all zeros
+            * use in conjunction with reduce_columns(...others=False)
+        """
+        if not nb_columns: nb_columns=len(self.tags)
+        test=self.dataframe['labels'].apply(lambda lbl: lbl!=[0]*nb_columns)
+        not_test=self.dataframe['labels'].apply(lambda lbl: lbl==[0]*nb_columns)
+        df=self.dataframe[test]
+        df_not=self.dataframe[not_test]
+        size=df.shape[0]
+        not_size=df_not.shape[0]
+        with_pct=size/self.size
+        if (with_pct<pct) or exact:
+            not_target=int((100/pct-1)*size)
+            not_target=min(not_target,not_size)
+            print(size,not_size,self.size,with_pct,not_target,not_size)
+            df_not=df_not.sample(frac=not_target/not_size)
+        self.dataframe=pd.concat([df,df_not]).sample(frac=1)
+        self.reset()
+
+
     def reduce_columns(self,*indices_or_tags,others=True):
         """ Keep passed columns and optional "others"
 
