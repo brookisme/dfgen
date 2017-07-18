@@ -4,6 +4,7 @@ from skimage import io
 from sklearn.utils import shuffle
 import pandas as pd
 import numpy as np
+import random
 
 
 CSV_SEP=' '
@@ -52,9 +53,15 @@ class DFGen():
             image_dir=None,
             image_ext=None,
             lambda_func=False,
-            csv_sep=None):
+            csv_sep=None,
+            augment=False,
+            rotations=[0,1,2,3],
+            flips=[0,1]):
         self._init_properties()
         self._load_defaults()
+        self.augment=augment
+        self.rotations=rotations
+        self.flips=flips
         self.tags=tags or self._default('tags')
         self.batch_size=batch_size or self._default('batch_size')
         self.lambda_func=lambda_func
@@ -137,7 +144,6 @@ class DFGen():
         if (with_pct<pct) or exact:
             not_target=int((100/pct-1)*size)
             not_target=min(not_target,not_size)
-            print(size,not_size,self.size,with_pct,not_target,not_size)
             df_not=df_not.sample(frac=not_target/not_size)
         self.dataframe=pd.concat([df,df_not]).sample(frac=1)
         self.reset()
@@ -245,10 +251,11 @@ class DFGen():
         batch_labels=self.labels[start:end]
         batch_paths=self.paths[start:end]
         if self.augment:
-            batch_augments=self.augments[start:end]
-            batch_imgs=[
-                self._img_data(img,augment) for img,augment in zip(
-                    batch_paths,batch_augments)]
+            if self.dataframe_is_augmented:
+                batch_augments=self.augments[start:end]
+                batch_imgs=[
+                    self._img_data(img,augment) for img,augment in zip(
+                        batch_paths,batch_augments)]
         else:
             batch_imgs=[self._img_data(img) for img in batch_paths]
         self.batch_index+=1
@@ -293,11 +300,16 @@ class DFGen():
         """
         img=io.imread(path)
         if self.augment:
-            img=self._augment(img,augment)
+            img=self._augment(img,augment or self._augmentation())
         if self.lambda_func:
-            return self.lambda_func(img)
-        else:
-            return img
+            img=self.lambda_func(img)
+        return img
+
+
+    def _augmentation(self):
+        """ pick random augmentation
+        """
+        return random.choice(self.rotations), random.choice(self.flips)
 
 
     def _augment(self,img,augment):
@@ -343,7 +355,8 @@ class DFGen():
         if PATH_COLUMN not in df.columns:
             df[PATH_COLUMN]=df[self.image_column].apply(self._image_path_from_name)
         self.dataframe=df
-        self.augment=(AUGMENT_COLUMN in self.dataframe.columns)
+        self.dataframe_is_augmented=(AUGMENT_COLUMN in self.dataframe.columns)
+        if not self.augment: self.augment=self.dataframe_is_augmented
 
 
     def _set_columns(self,image_column,label_column,tags_column):
