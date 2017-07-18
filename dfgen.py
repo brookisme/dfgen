@@ -198,7 +198,7 @@ class DFGen():
         self.size=self.dataframe.shape[0]
         self.labels=self.dataframe[self.label_column].values.tolist()
         self.paths=self.dataframe[PATH_COLUMN].values.tolist()
-        if self.augment:
+        if self.dataframe_is_augmented:
             self.augments=self.dataframe[AUGMENT_COLUMN].values.tolist()
 
 
