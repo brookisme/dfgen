@@ -381,7 +381,7 @@ class DFGen():
         else:
             self.dataframe[self.label_column]=self.dataframe[self.label_column].apply(
                 self._to_list)
-        if self.augment:
+        if self.dataframe_is_augmented:
             self.dataframe[AUGMENT_COLUMN]=self.dataframe[AUGMENT_COLUMN].apply(
                 self._to_list)        
 
