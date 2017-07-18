@@ -250,12 +250,11 @@ class DFGen():
         if (end>=self.size): self.reset()
         batch_labels=self.labels[start:end]
         batch_paths=self.paths[start:end]
-        if self.augment:
-            if self.dataframe_is_augmented:
-                batch_augments=self.augments[start:end]
-                batch_imgs=[
-                    self._img_data(img,augment) for img,augment in zip(
-                        batch_paths,batch_augments)]
+        if self.dataframe_is_augmented:
+            batch_augments=self.augments[start:end]
+            batch_imgs=[
+                self._img_data(img,augment) for img,augment in zip(
+                    batch_paths,batch_augments)]
         else:
             batch_imgs=[self._img_data(img) for img in batch_paths]
         self.batch_index+=1
